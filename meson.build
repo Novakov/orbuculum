@@ -172,6 +172,18 @@ executable('orbmortem',
     install: true,
 )
 
+executable('loadelf_test',
+    sources: [
+        'Src/loadelf.c',
+        git_version_info_h,
+    ],
+    include_directories: incdirs,
+    dependencies: dependencies,
+    link_with: liborb,
+    install: false,
+    c_args: '-DTESTING_LOADELF'
+)
+
 executable('orbprofile',
     sources: [
         'Src/orbprofile.c',
