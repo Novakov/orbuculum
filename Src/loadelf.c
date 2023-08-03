@@ -646,34 +646,63 @@ static bool _loadSource( struct symbol *p )
     {
         r = readsourcefile( p->stringTable[PT_FILENAME][i], &l );
 
+        if(r == NULL)
+        {
+            continue;
+        }
+
         /* Create an entry for this file. It will remain zero (NULL) if there are no lines in it */
         struct symbolSourcecodeStore *store = p->source[i] = ( struct symbolSourcecodeStore * )calloc( 1, sizeof( struct symbolSourcecodeStore ) );
 
-        while ( l )
+        while ( l > 0 )
         {
             /* Add this line to the storage. */
             store->linetext = ( char ** )realloc( store->linetext, sizeof( char * ) * ( store->nlines + 1 ) );
             store->linetext[store->nlines++] = r;
 
-            /* Spin forwards for next newline or eof */
-            while ( ( *r != '\n' ) && l-- )
+            while(true)
             {
-                /* Get rid of pesky returns */
-                if ( *r == '\r' )
-                {
+                if(l == 0) {
+                    break;
+                }
+
+                if(*r == '\r') {
                     *r = 0;
+                    r += 2;
+                    l -= 2;
+                    break;
+                }
+
+                if(*r == '\n') {
+                    *r = 0;
+                    r += 1;
+                    l -= 1;
+                    break;
                 }
 
                 r++;
-            }
-
-            *r = 0;
-
-            if ( l )
-            {
                 l--;
-                r++;
             }
+
+            /* Spin forwards for next newline or eof */
+            // while ( l-- && ( *r != '\n' ) )
+            // {
+            //     /* Get rid of pesky returns */
+            //     if ( *r == '\r' )
+            //     {
+            //         *r = 0;
+            //     }
+
+            //     r++;
+            // }
+
+            // *r = 0;
+
+            // if ( l )
+            // {
+            //     l--;
+            //     r++;
+            // }
         }
     }
 
