@@ -459,6 +459,23 @@ static void _processDie( struct symbol *p, Dwarf_Debug dbg, Dwarf_Die die, int l
 }
 // ====================================================================================================
 
+bool isAbsolutePath(const char* p) {
+    if (p[0] == '/') return true;
+    if ('A' <= p[0] && p[0] <= 'Z' && p[1] == ':') return true;
+    if ('a' <= p[0] && p[0] <= 'z' && p[1] == ':') return true;
+    return false;
+}
+
+char* joinPaths(const char* p1, const char* p2)
+{
+    if(isAbsolutePath(p2)) return strdup(p2);
+    char* res = (char*)malloc(strlen(p1) + strlen(p2) + 2);
+    strcpy(res, p1);
+    strcat(res, "/");
+    strcat(res, p2);
+    return res;
+}
+
 static bool _readLines( struct symbol *p )
 {
     Dwarf_Debug dbg;
@@ -521,10 +538,7 @@ static bool _readLines( struct symbol *p )
         dwarf_die_text( cu_die, DW_AT_comp_dir, &compdir, 0 );
 
         /* Need to construct the fully qualified filename from the directory + filename */
-        char *s = ( char * )malloc( strlen( name ) + strlen( compdir ) + 2 );
-        strcpy( s, compdir );
-        strcat( s, "/" );
-        strcat( s, name );
+        char *s = joinPaths(compdir, name);
         filenameN  = _findOrAddString( s, &p->stringTable[PT_FILENAME],  &p->tableLen[PT_FILENAME] );
         free( s );
         producerN =  _findOrAddString( producer, &p->stringTable[PT_PRODUCER],  &p->tableLen[PT_PRODUCER] );
@@ -624,7 +638,6 @@ static bool _loadSource( struct symbol *p )
 {
     char *r;
     size_t l;
-
 
     /* We need to aqquire source code for all of the files that we have an entry in the stringtable, so let's start by making room */
     p->source = ( struct symbolSourcecodeStore ** )calloc( 1, sizeof( struct symbolSourcecodeStore * )*p->tableLen[PT_FILENAME] );
