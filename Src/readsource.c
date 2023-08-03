@@ -13,6 +13,37 @@
 // ====================================================================================================
 // ====================================================================================================
 
+#if defined(WIN32)
+char *readsourcefile( char *path, size_t *l )
+{
+    *l = 0;
+    FILE* f = fopen(path, "r");
+    if (f == NULL)
+    {
+        return NULL;
+    }
+
+    char *retBuffer = (char *)malloc(BLOCKSIZE);
+
+    size_t insize = fread(retBuffer, 1, BLOCKSIZE, f);
+    *l = insize;
+
+    while(!feof(f))
+    {
+        retBuffer = (char *)realloc(retBuffer, *l + BLOCKSIZE);
+        insize = fread(&retBuffer[*l], 1, BLOCKSIZE, f);
+        *l += insize;
+    }
+
+    fclose(f);
+
+    retBuffer = (char *)realloc(retBuffer, *l + 1);
+    retBuffer[*l] = '\0';
+
+    return retBuffer;
+}
+
+#else
 char *readsourcefile( char *path, size_t *l )
 
 /* Return either a malloced buffer containing the source file, or NULL if the file isn't available */
@@ -35,9 +66,10 @@ char *readsourcefile( char *path, size_t *l )
     else
     {
         /* No environment variable, use the default */
-        snprintf( commandLine, MAX_LINE_LEN, "source-highlight -f esc -o STDOUT -i %s 2>/dev/null", path );
+        snprintf( commandLine, MAX_LINE_LEN, "source-highlight -f esc -o STDOUT -i %s", path );
     }
 
+    puts(commandLine);
     fd = popen( commandLine, "r" );
 
     /* Perform a single read...this will lead to a zero length read if the command wasn't valid */
@@ -86,4 +118,5 @@ char *readsourcefile( char *path, size_t *l )
 
     return retBuffer;
 }
+#endif
 // ====================================================================================================
