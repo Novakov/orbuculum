@@ -595,10 +595,11 @@ static bool _readLines( struct symbol *p )
 
         dwarf_lowpc( cu_die, &cu_low_addr, 0 );
         _processDie( p, dbg, cu_die, 0, filenameN, producerN, cu_low_addr );
-        dwarf_dealloc( dbg, cu_die, DW_DLA_DIE );
 
         /* ...and the source lines */
         _getSourceLines( p, dbg, cu_die );
+
+        dwarf_dealloc( dbg, cu_die, DW_DLA_DIE );
     }
 
     /* 2: We have the lines and functions. Clean them up and interlink them so they're useful to applications */
@@ -694,6 +695,7 @@ static bool _loadSource( struct symbol *p )
     for ( int i = 0; i < p->tableLen[PT_FILENAME]; i++ )
     {
         r = readsourcefile( p->stringTable[PT_FILENAME][i], &l );
+        printf("r=%p l=%d\n", r, l);
 
         /* Create an entry for this file. It will remain zero (NULL) if there are no lines in it, because r was NULL */
         struct symbolSourcecodeStore *store = p->source[i] = ( struct symbolSourcecodeStore * )calloc( 1, sizeof( struct symbolSourcecodeStore ) );
@@ -701,12 +703,18 @@ static bool _loadSource( struct symbol *p )
         /* Lines in sio.c are demarked by \n, \r or \0 ... so we just need to find the indicies to one after each of those */
         while ( l )
         {
+            assert(l >= 0);
+            // printf("looping at l=%d\n", l);
             /* Add this line to the storage. */
             store->linetext = ( char ** )realloc( store->linetext, sizeof( char * ) * ( store->nlines + 1 ) );
             store->linetext[store->nlines++] = r;
 
             /* Spin forwards for next newline or eof */
-            while ( ( l-- > 0 ) && ( *r++ != '\n' ) ) {};
+            while ( ( l > 0 ) && ( *r++ != '\n' ) ) {
+                // printf("l=%d\n", l); 
+                l--;
+                assert(l >= 0);
+            }
         }
     }
 
